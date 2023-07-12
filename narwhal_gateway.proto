@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package NarwhalProto;
+
+message Proposal {
+    bytes EthereumBlock = 1;
+}
+message ProposalResponse {
+    string SuccessOrFail = 1;
+}
+
+message Certificate {
+    bytes Header = 1;
+    bytes AggregatedSignature = 2;
+}
+
+// Each Payload represents a committed ethereum block
+message Batch {
+    bytes Payload = 1;
+}
+
+message ConsensusOutput {
+    // Certificate is used to verify this ConsensusOutput is valid
+    bytes Certificate = 1;
+
+    // SequenceNumber is the order determined in Narwhal
+    uint64 SequenceNumber = 2;
+
+    // Batches are ethereum blocks in order.
+    repeated Batch Batches = 3;
+}
+
+message SubscribeConsensusOutputRequest {
+    string RequestorId = 1;
+}
+
+message Response {
+    string Resp = 1;
+}
+
+// NarwhalGateway is a bridge between Ethereum(Execution) and Narwhal(Consensus) 
+// i.e., executing narwhal-ordered Txs in EVM
+service NarwhalGateway {
+    // SubmitTransaction is invoked by Ethereum Geth to submit Tx
+    rpc SubmitTransaction(Proposal) returns (ProposalResponse);
+
+    // SubscribeConsensusOutput is invoked by Geth to subsribe ConsensusOutput to execute narwhal-committed Txs using EVM
+    rpc SubscribeConsensusOutput(SubscribeConsensusOutputRequest) returns (stream ConsensusOutput);
+
+    // DeliverConsensusOutput is invoked by NarwhalNode to deliver ConsensusOutput
+    rpc DeliverConsensusOutput(ConsensusOutput) returns (Response);
+}
