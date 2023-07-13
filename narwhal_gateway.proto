@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package NarwhalProto;
+package narwhal_gateway;
 
 message Proposal {
     bytes EthereumBlock = 1;
@@ -19,22 +19,34 @@ message Batch {
     bytes Payload = 1;
 }
 
-message ConsensusOutput {
-    // Certificate is used to verify this ConsensusOutput is valid
-    bytes Certificate = 1;
+message CertificateAndBatch {
+    Certificate Certificate = 1;
+    Batch Batch = 2;
+}
+
+message CommittedSubDag {
+    /// The sequence of committed certificates.
+    repeated Certificate Certificates = 1;
+
+    /// The leader certificate responsible of committing this sub-dag.
+    bytes LeaderCertificate = 2;
 
     // SequenceNumber is the order determined in Narwhal
-    uint64 SequenceNumber = 2;
+    uint64 SequenceNumber = 3;
+}
 
-    // Batches are ethereum blocks in order.
-    repeated Batch Batches = 3;
+/// The output of Consensus, which includes all the batches for each certificate in the sub dag
+/// It is sent to the the Adapter to execute using EVM
+message ConsensusOutput {
+    CommittedSubDag SubDag = 1;
+    repeated CertificateAndBatch Batches = 2;
 }
 
 message SubscribeConsensusOutputRequest {
     string RequestorId = 1;
 }
 
-message Response {
+message DeliverConsensusOutputResponse {
     string Resp = 1;
 }
 
@@ -44,9 +56,10 @@ service NarwhalGateway {
     // SubmitTransaction is invoked by Ethereum Geth to submit Tx
     rpc SubmitTransaction(Proposal) returns (ProposalResponse);
 
-    // SubscribeConsensusOutput is invoked by Geth to subsribe ConsensusOutput to execute narwhal-committed Txs using EVM
+    // SubscribeConsensusOutput is invoked by Geth to subsribe ConsensusOutput 
     rpc SubscribeConsensusOutput(SubscribeConsensusOutputRequest) returns (stream ConsensusOutput);
 
     // DeliverConsensusOutput is invoked by NarwhalNode to deliver ConsensusOutput
-    rpc DeliverConsensusOutput(ConsensusOutput) returns (Response);
+    rpc DeliverConsensusOutput(ConsensusOutput) returns (DeliverConsensusOutputResponse);
 }
+
