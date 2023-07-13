@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package narwhal_gateway;
 
+
 message Proposal {
     bytes EthereumBlock = 1;
 }
